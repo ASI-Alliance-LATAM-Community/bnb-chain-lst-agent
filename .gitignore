@@ -1,0 +1,40 @@
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env
+.env.*
+
+# SQLite database
+orders.db
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Logs & misc
+*.log
+*.pid
+
+# IDE / Editor settings
+.vscode/
+.idea/
+*.swp
+
+# Test & coverage reports
+.coverage
+htmlcov/
+*.py,cover
+coverage.xml
+.pytest_cache/
+nosetests.xml
+junit.xml
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/

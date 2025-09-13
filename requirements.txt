@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+uagents
+web3
+python-dotenv
+requests
+pydantic
+SQLAlchemy
+eth-account
