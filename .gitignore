@@ -38,3 +38,7 @@ build/
 dist/
 *.egg-info/
 .eggs/
+
+
+# Agent keys
+private_keys.json
