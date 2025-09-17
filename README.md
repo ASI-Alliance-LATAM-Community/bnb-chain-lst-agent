@@ -14,7 +14,6 @@
 
 Agent built with **FastAPI + uAgents + Web3** to perform *liquid staking* on **BNB Chain** in an extremely simple way, without long‑term custody of funds or user account creation.
 
-
 ## 🚀 What it does
 
 
