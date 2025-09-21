@@ -1,15 +1,10 @@
-from typing import Dict, Any, Tuple
+from typing import Dict, Any
 from datetime import datetime, timezone
 from decimal import Decimal, ROUND_DOWN
-import base64
-from io import BytesIO
 
-import qrcode
-from qrcode.image.pil import PilImage
-from eth_utils import keccak, to_checksum_address
+from eth_utils import keccak
 
 from .registry import LST_REGISTRY_BSC
-from .config import CHAIN_ID
 
 
 def wei_from_bnb(amount_str: str) -> int:
@@ -34,27 +29,6 @@ def eip681_from_tx(
     if gas_price is not None:
         base += f"&gasPrice={gas_price}"
     return base
-
-
-def make_qr_png(data: str) -> tuple[bytes, str]:
-    """
-    Create a PNG QR and return (png_bytes, data_url).
-    """
-    qr = qrcode.QRCode(
-        version=None,
-        error_correction=qrcode.constants.ERROR_CORRECT_M,
-        box_size=10,
-        border=2,
-    )
-    qr.add_data(data)
-    qr.make(fit=True)
-    img: PilImage = qr.make_image(fill_color="black", back_color="white")
-    buf = BytesIO()
-    img.save(buf, format="PNG")
-    png_bytes = buf.getvalue()
-    data_url = "data:image/png;base64," + base64.b64encode(png_bytes).decode("ascii")
-    return png_bytes, data_url
-
 
 def find_token(symbol_or_address: str) -> Dict[str, Any]:
     s = symbol_or_address.strip().lower()

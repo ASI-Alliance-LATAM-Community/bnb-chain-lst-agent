@@ -53,6 +53,15 @@ PANCAKE_SWAP_BASE = "https://pancakeswap.finance/swap"
 ROUTER_V2 = "0x10ED43C718714eb63d5aA57B78B54704E256024E"
 WBNB_BSC = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c".lower()
 
+# === Agent Wallet Config ===
+
+AGENT_PRIV = os.getenv("AGENT_PRIV")
+if not AGENT_PRIV:
+    raise RuntimeError("AGENT_PRIV not set. Add it to your environment or .env")
+
+GAS_BUDGET_MULTIPLIER = float(os.getenv("GAS_BUDGET_MULTIPLIER", "1.2"))
+MIN_SWAP_VALUE_WEI = int(os.getenv("MIN_SWAP_VALUE_WEI", str(200_000_000_000_000)))
+
 # === General Config ===
 
 DEFAULT_HEADERS = {

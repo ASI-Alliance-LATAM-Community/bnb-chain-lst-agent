@@ -1,0 +1,100 @@
+{
+    "orders_v1": {
+        "232c19fcc0fc8bd5757b7dce": {
+            "id": "232c19fcc0fc8bd5757b7dce",
+            "symbol": "BNBx",
+            "token_address": "0x1bdd3Cf7F79cfB8EdbB955f20ad99211551BA275",
+            "recipient": "0x6FD7FB63efb93395c113a63422a54B41aBc5533D",
+            "slippage_bps": 150,
+            "recv_priv": "0xdb77a6dc6fb2ad2118af762894c30bd1cb0cb3b04dfb843f1161fddbcb96acfd",
+            "recv_addr": "0xC803d3833DEFb53Fb32A3D14b86d21477488367C",
+            "status": "error",
+            "created_at": 1758146439,
+            "last_error": "'SignedTransaction' object has no attribute 'rawTransaction'"
+        },
+        "c788937007db40514ec12096": {
+            "id": "c788937007db40514ec12096",
+            "symbol": "BNBx",
+            "token_address": "0x1bdd3Cf7F79cfB8EdbB955f20ad99211551BA275",
+            "recipient": "0x6FD7FB63efb93395c113a63422a54B41aBc5533D",
+            "slippage_bps": 150,
+            "recv_priv": "0x3b557a128864dfda580b6a0ea82ae86fc3e0ada3c3f42aeda9a7666dd7f763fd",
+            "recv_addr": "0x7DF76350a34137E7eeC4ccb40483d49a123CAAb8",
+            "status": "error",
+            "created_at": 1758146625,
+            "last_error": "HTTPSConnectionPool(host='bnb-mainnet.g.alchemy.com', port=443): Read timed out. (read timeout=20)"
+        },
+        "6b2f2a5ff074db621772732c": {
+            "id": "6b2f2a5ff074db621772732c",
+            "symbol": "BNBx",
+            "token_address": "0x1bdd3Cf7F79cfB8EdbB955f20ad99211551BA275",
+            "recipient": "0x6FD7FB63efb93395c113a63422a54B41aBc5533D",
+            "slippage_bps": 150,
+            "recv_priv": "0x1a1336b9fda79a23b3099a6afdcf1cfddd7afe41eab44924629ceda08dee0a64",
+            "recv_addr": "0xb249E9D5B4405c531f551A89F5C65fF1aD307817",
+            "status": "error",
+            "created_at": 1758147006,
+            "last_error": "('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))"
+        },
+        "590748dc2c1b25fa8363c71c": {
+            "id": "590748dc2c1b25fa8363c71c",
+            "symbol": "BNBx",
+            "token_address": "0x1bdd3Cf7F79cfB8EdbB955f20ad99211551BA275",
+            "recipient": "0x6FD7FB63efb93395c113a63422a54B41aBc5533D",
+            "slippage_bps": 150,
+            "recv_priv": "0x05b2792f1fc428a902130c0a8f06c72501d04937bac229a8d3378ef7cf4824d9",
+            "recv_addr": "0x298674205feb136A0e16E21023a60e501f526730",
+            "status": "error",
+            "created_at": 1758147111,
+            "last_error": "'SignedTransaction' object has no attribute 'rawTransaction'"
+        },
+        "e798200e0fe61c5af36ac968": {
+            "id": "e798200e0fe61c5af36ac968",
+            "symbol": "BNBx",
+            "token_address": "0x1bdd3Cf7F79cfB8EdbB955f20ad99211551BA275",
+            "recipient": "0x6FD7FB63efb93395c113a63422a54B41aBc5533D",
+            "slippage_bps": 150,
+            "recv_priv": "0x400e02368a5be6981e16db88d4f69be931230c5c7e83e10cb8985632eec8e443",
+            "recv_addr": "0xF61ec7795C44BB36394E166199BA9dAc5635411c",
+            "status": "error",
+            "created_at": 1758148115,
+            "last_error": "HTTPSConnectionPool(host='bnb-mainnet.g.alchemy.com', port=443): Max retries exceeded with url: /v2/ERBSr8jRFGWjCo3p48LE0 (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of protocol (_ssl.c:1000)')))"
+        },
+        "781bcf525b9d2361d686d523": {
+            "id": "781bcf525b9d2361d686d523",
+            "symbol": "BNBx",
+            "token_address": "0x1bdd3Cf7F79cfB8EdbB955f20ad99211551BA275",
+            "recipient": "0x6FD7FB63efb93395c113a63422a54B41aBc5533D",
+            "slippage_bps": 150,
+            "recv_priv": "0xdbd50ce9f1ea982f6aa669885cd6723c05c25fe7802f0c486faf369a8a556c77",
+            "recv_addr": "0xEFdDc972AED88579F86c7404fE7b58586e665252",
+            "status": "error",
+            "created_at": 1758148218,
+            "last_error": "'SignedTransaction' object has no attribute 'rawTransaction'"
+        },
+        "79e4837140a3b7b966040204": {
+            "id": "79e4837140a3b7b966040204",
+            "symbol": "BNBx",
+            "token_address": "0x1bdd3Cf7F79cfB8EdbB955f20ad99211551BA275",
+            "recipient": "0x6FD7FB63efb93395c113a63422a54B41aBc5533D",
+            "slippage_bps": 150,
+            "recv_priv": "0x8b9858a3ed769f458758b3828c8825e858e27f1ea7f4aa2f7617530e7bf50bd4",
+            "recv_addr": "0xDbE093d746C7829e4CA3fd327826B59a9287228f",
+            "status": "error",
+            "created_at": 1758148495,
+            "last_error": "HTTPSConnectionPool(host='bnb-mainnet.g.alchemy.com', port=443): Max retries exceeded with url: /v2/ERBSr8jRFGWjCo3p48LE0 (Caused by NameResolutionError(\"<urllib3.connection.HTTPSConnection object at 0x7bbde40d98b0>: Failed to resolve 'bnb-mainnet.g.alchemy.com' ([Errno -3] Temporary failure in name resolution)\"))"
+        },
+        "f2e20c9d55d87fc5db0694fd": {
+            "id": "f2e20c9d55d87fc5db0694fd",
+            "symbol": "BNBx",
+            "token_address": "0x1bdd3Cf7F79cfB8EdbB955f20ad99211551BA275",
+            "recipient": "0x6FD7FB63efb93395c113a63422a54B41aBc5533D",
+            "slippage_bps": 100,
+            "recv_priv": "0x84009a6bcd0f57de39857e227195abbcbb479648ed7454eda5435cd7743b0f71",
+            "recv_addr": "0xAa7746901F56746a834D2F87321c994980303E5B",
+            "status": "pending",
+            "created_at": 1758492529,
+            "last_error": null
+        }
+    }
+}
