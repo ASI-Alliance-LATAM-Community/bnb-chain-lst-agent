@@ -11,10 +11,11 @@ from uagents_core.contrib.protocols.chat import (
     StartSessionContent,
 )
 from uagents import Agent, Context, Protocol
-from .config import ASI1_BASE_URL, ASI1_HEADERS, IS_DEV, CHAIN_ID, BSC_RPC_URL
+from .config import ASI1_BASE_URL, ASI1_HEADERS, IS_DEV, CHAIN_ID, BSC_RPC_URL, GAS_BUDGET_MULTIPLIER, MIN_SWAP_VALUE_WEI
 from .registry import LST_REGISTRY_BSC
 from .tools import tools_schema, dispatch_tool
 from .settlement import settlement_tick
+from .rpc import rpc
 
 def _text_msg(text: str) -> ChatMessage:
     return ChatMessage(
@@ -22,6 +23,12 @@ def _text_msg(text: str) -> ChatMessage:
         msg_id=uuid4(),
         content=[TextContent(type="text", text=text)],
     )
+
+def _wei_to_bnb(wei: int) -> float:
+    return wei / 10**18
+
+def _fmt_bnb(wei: int) -> str:
+    return f"{_wei_to_bnb(wei):.6f}"
 
 async def process_query(query: str, ctx: Context):
     try:
@@ -52,7 +59,7 @@ async def process_query(query: str, ctx: Context):
             "tools": tools_schema,
             "tool_choice": "auto",
             "temperature": 0.2,
-            "max_tokens": 1024,
+            "max_tokens": 4096,
         }
 
         resp = requests.post(
@@ -71,7 +78,7 @@ async def process_query(query: str, ctx: Context):
         if not tool_calls:
             return (
                 "Sorry, I couldn't find any action to execute for your query. "
-                "Please try again, e.g.: 'Managed buy QR for BNBx → <your address>'."
+                "Please try again, e.g.: 'Managed buy for BNBx → <your address>'."
             )
 
         for tc in tool_calls:
@@ -98,12 +105,28 @@ async def process_query(query: str, ctx: Context):
                 sbps = tool_result.get("slippage_bps")
                 reason = tool_result.get("slippage_reason", "")
                 uri = tool_result.get("uri", "")
+                
+                try:
+                    gp = rpc("eth_gasPrice", [])
+                    if "error" in gp:
+                        raise RuntimeError(gp["error"].get("message", "gasPrice error"))
+                    gas_price = int(gp["result"], 16)  # wei
+                except Exception:
+                    gas_price = 1_000_000_000
+                
+
+                gas_limit_guess = 160_000 
+                est_gas_cost_wei = int(gas_limit_guess * gas_price * float(GAS_BUDGET_MULTIPLIER))
+                min_required_wei = max(int(MIN_SWAP_VALUE_WEI), est_gas_cost_wei)
+                
                 text = (
                     f"🧾 **Managed order created** for **{tok}**\n\n"
-                    f"**Send BNB to:** `{recv}`\n"
+                    f"**Send BNB to:** `{recv}`\n\n\n"
+                    f"**Minimum to send:** ~{_fmt_bnb(min_required_wei)} BNB \n"
+                    f"(includes est. gas @ ~{gas_limit_guess} gas × {gas_price/1e9:.2f} gwei × {GAS_BUDGET_MULTIPLIER}×)\n"
                     f"**How much?** Any amount (includes gas)\n"
-                    f"**Slippage:** { (sbps or 0) / 100:.2f}% — _{reason}_\n"
-                    f"**Pay URI (EIP-681):** `{uri}`\n\n"
+                    f"**Slippage:** { (sbps or 0) / 100:.2f}% — _{reason}_\n\n"
+                    f"**Pay URI (EIP-681):** `{uri}`\n\n\n"
                     f"Once your BNB arrives, I’ll swap BNB→{tok} on Pancake v2 and send the tokens to your address (chainId {CHAIN_ID})."
                 )
                 return text
@@ -119,7 +142,7 @@ async def process_query(query: str, ctx: Context):
                 "model": "asi1-mini",
                 "messages": messages_history,
                 "temperature": 0.2,
-                "max_tokens": 2048,
+                "max_tokens": 4096,
             },
             timeout=60,
         )
