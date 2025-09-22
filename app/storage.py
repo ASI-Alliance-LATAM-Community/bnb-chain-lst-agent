@@ -1,5 +1,3 @@
-from typing import Tuple, Optional
-import base64
 from uuid import uuid4
 from uagents import Context
 

@@ -1,15 +1,20 @@
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 import requests
 from eth_abi import encode, decode
-from eth_utils import to_checksum_address
 
 from .config import BSC_RPC_URL, ROUTER_V2
 from .utils import selector
 
+
 def rpc(method: str, params: list) -> dict:
-    r = requests.post(BSC_RPC_URL, json={"jsonrpc":"2.0","id":1,"method":method,"params":params}, timeout=20)
+    r = requests.post(
+        BSC_RPC_URL,
+        json={"jsonrpc": "2.0", "id": 1, "method": method, "params": params},
+        timeout=20,
+    )
     r.raise_for_status()
     return r.json()
+
 
 def rpc_call_generic(
     to_addr: str, data_hex: str, value_dec_str: str | int = 0

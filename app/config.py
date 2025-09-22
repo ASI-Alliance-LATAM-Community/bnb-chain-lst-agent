@@ -4,6 +4,11 @@ from uagents_core.storage import ExternalStorage
 
 load_dotenv()
 
+# === Environment Config ===
+
+ENVIROMENT = (os.getenv("ENVIROMENT") or "").strip().upper()
+IS_DEV = ENVIROMENT == "DEV"
+
 # === ASI1 Config ===
 
 ASI1_API_KEY = os.getenv("ASI1_API_KEY")
@@ -14,9 +19,20 @@ ASI1_HEADERS = {
 }
 
 # === BNB Chain Config ===
+BSC_RPC_URL = os.getenv("BSC_RPC_URL_DEV") if IS_DEV else os.getenv("BSC_RPC_URL")
+CHAIN_ID = 97 if IS_DEV else 56
 
-BSC_RPC_URL = os.getenv("BSC_RPC_URL")
-CHAIN_ID = 56
+def explorer_base() -> str:
+    return "https://testnet.bscscan.com" if IS_DEV else "https://bscscan.com"
+
+def explorer_tx(tx_hash: str) -> str:
+    return f"{explorer_base()}/tx/{tx_hash}"
+
+def explorer_address(addr: str) -> str:
+    return f"{explorer_base()}/address/{addr}"
+
+def explorer_token(addr: str) -> str:
+    return f"{explorer_base()}/token/{addr}"
 
 # === Agentverse Config ===
 
@@ -50,12 +66,26 @@ BINANCE_BASE = "https://api.binance.com"
 
 PANCAKE_INFO_BASE = "https://api.pancakeswap.info/api/v2"
 PANCAKE_SWAP_BASE = "https://pancakeswap.finance/swap"
-ROUTER_V2 = "0x10ED43C718714eb63d5aA57B78B54704E256024E"
-WBNB_BSC = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c".lower()
+
+if IS_DEV:
+    ROUTER_V2 = "0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3"  # Pancake V2 router (testnet)
+    WBNB_BSC = "0xae13d989dac2f0debff460ac112a837c89baa7cd".lower()  # WBNB (testnet)
+else:
+    ROUTER_V2 = "0x10ED43C718714eb63d5aA57B78B54704E256024E"  # Pancake V2 router (mainnet)
+    WBNB_BSC = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c".lower()  # WBNB (mainnet)
+
+# === Agent Wallet Config ===
+
+AGENT_PRIV = os.getenv("AGENT_PRIV")
+if not AGENT_PRIV:
+    raise RuntimeError("AGENT_PRIV not set. Add it to your environment or .env")
+
+GAS_BUDGET_MULTIPLIER = float(os.getenv("GAS_BUDGET_MULTIPLIER", "1.2"))
+MIN_SWAP_VALUE_WEI = int(os.getenv("MIN_SWAP_VALUE_WEI", str(200_000_000_000_000)))
 
 # === General Config ===
 
 DEFAULT_HEADERS = {
     "Accept": "application/json",
-    "User-Agent": "bnb-chain-lst-agent/1.0 (+https://example.com)",
+    "User-Agent": f"bnb-chain-lst-agent/1.0 ({'dev' if IS_DEV else 'prod'})",
 }

@@ -7,8 +7,6 @@ requests
 pydantic
 SQLAlchemy
 eth-account
-qrcode
-qrcode[pil]
 Pillow
 eth_utils
 eth-abi

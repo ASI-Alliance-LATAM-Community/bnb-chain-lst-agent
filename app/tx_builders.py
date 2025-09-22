@@ -1,6 +1,5 @@
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 from datetime import datetime, timezone
-import base64
 from eth_abi import encode
 from eth_utils import to_checksum_address
 
@@ -9,7 +8,6 @@ from .utils import (
     selector,
     wei_from_bnb,
     eip681_from_tx,
-    make_qr_png,
     find_token,
     parse_approve_amount,
 )
@@ -93,7 +91,6 @@ def create_approve_qr(token_address: str, amount: str | None = None) -> Dict[str
     value_uint256 = parse_approve_amount(amount)
 
     uri = eip681_for_approve(token, spender, value_uint256)
-    png_bytes, _ = make_qr_png(uri)
 
     return {
         "ok": True,
@@ -101,7 +98,6 @@ def create_approve_qr(token_address: str, amount: str | None = None) -> Dict[str
         "token": token,
         "spender": spender,
         "amount_uint256": str(value_uint256),
-        "qr_png_b64": base64.b64encode(png_bytes).decode("ascii"),
         "mime_type": "image/png",
         "notes": [
             "Scan with MetaMask mobile (or compatible wallet) to open a pre-filled Confirm Transaction.",
@@ -131,16 +127,16 @@ def create_buy_lst_tx_qr(
     - slippage_bps: e.g. 100 = 1%
     - deadline_seconds: from now
     """
-    if slippage_bps is None:
-        slippage_bps, slippage_reason = auto_slippage_bps(token_addr)
-    else:
-        slippage_reason = "user-specified slippage"
-
     token = find_token(symbol_or_address)
     token_addr = to_checksum_address(token["address"])
     wbnb = to_checksum_address("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c")
     recipient = to_checksum_address(recipient_address)
     sender_for_estimate = to_checksum_address(from_address or recipient_address)
+
+    if slippage_bps is None:
+        slippage_bps, slippage_reason = auto_slippage_bps(token_addr)
+    else:
+        slippage_reason = "user-specified slippage"
 
     amount_in_wei = wei_from_bnb(amount_bnb)
     path = [wbnb, token_addr]
@@ -156,7 +152,6 @@ def create_buy_lst_tx_qr(
     gas_limit, gas_price, gas_err = estimate_gas_and_price(tx, sender_for_estimate)
 
     eip681 = eip681_from_tx(tx, chain_id=CHAIN_ID, gas=gas_limit, gas_price=gas_price)
-    png_bytes, _ = make_qr_png(eip681)
 
     meta_notes = [
         f"Slippage: {slippage_bps/100:.2f}% — {slippage_reason}",
@@ -175,7 +170,6 @@ def create_buy_lst_tx_qr(
         "slippage_reason": slippage_reason,
         "deadline": deadline,
         "simulation": sim,
-        "qr_png_b64": base64.b64encode(png_bytes).decode("ascii"),
         "mime_type": "image/png",
         "gas_limit": gas_limit,
         "gas_price": gas_price,
