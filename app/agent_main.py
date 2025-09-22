@@ -11,7 +11,9 @@ from uagents_core.contrib.protocols.chat import (
     StartSessionContent,
 )
 from uagents import Agent, Context, Protocol
-from .config import ASI1_BASE_URL, ASI1_HEADERS, IS_DEV, CHAIN_ID, BSC_RPC_URL, GAS_BUDGET_MULTIPLIER, MIN_SWAP_VALUE_WEI
+
+from app.orders_kv import get_order
+from .config import ASI1_BASE_URL, ASI1_HEADERS, IS_DEV, CHAIN_ID, BSC_RPC_URL, GAS_BUDGET_MULTIPLIER, MIN_SWAP_VALUE_WEI, explorer_address, explorer_token, explorer_tx
 from .registry import LST_REGISTRY_BSC
 from .tools import tools_schema, dispatch_tool
 from .settlement import settlement_tick
@@ -32,6 +34,36 @@ def _fmt_bnb(wei: int) -> str:
 
 async def process_query(query: str, ctx: Context):
     try:
+        q = (query or "").strip()
+        if q.lower().startswith("/status"):
+            parts = q.split()
+            if len(parts) < 2:
+                return "Usage: `/status <order_id>`"
+
+            oid = parts[1]
+            o = get_order(ctx, oid)
+            if not o:
+                return f"No order found with id `{oid}`."
+
+            txh = o.get("tx_hash")
+            lines = [
+                f"**Order {oid}**",
+                f"- Status: **{o.get('status')}**",
+                f"- Symbol: {o.get('symbol')} | Token: `{o.get('token_address')}`",
+                f"- Recipient: `{o.get('recipient')}`",
+                f"- Slippage (bps): {o.get('slippage_bps')}",
+                f"- Created (unix): {o.get('created_at')}",
+                f"↗ Token: {explorer_token(o.get('token_address'))}",
+                f"↗ Recipient: {explorer_address(o.get('recipient'))}",
+            ]
+            if txh:
+                lines.append(f"- Tx: `{txh}`")
+                lines.append(f"  ↗ Explorer: {explorer_tx(txh)}")
+            delivered = o.get("delivered_raw")
+            if delivered is not None:
+                lines.append(f"- Delivered (raw units): {delivered}")
+            return "\n".join(lines)
+        
         user_message = {"role": "user", "content": query}
         system_message = {
             "role": "system",
@@ -127,7 +159,8 @@ async def process_query(query: str, ctx: Context):
                     f"**How much?** Any amount (includes gas)\n"
                     f"**Slippage:** { (sbps or 0) / 100:.2f}% — _{reason}_\n\n"
                     f"**Pay URI (EIP-681):** `{uri}`\n\n\n"
-                    f"Once your BNB arrives, I’ll swap BNB→{tok} on Pancake v2 and send the tokens to your address (chainId {CHAIN_ID})."
+                    f"Once your BNB arrives, I’ll swap BNB→{tok} on Pancake v2 and send the tokens to your address (chainId {CHAIN_ID}).\n\n"
+                    f"**Order address (explorer):** {explorer_address(recv)}\n"
                 )
                 return text
 

@@ -22,6 +22,18 @@ ASI1_HEADERS = {
 BSC_RPC_URL = os.getenv("BSC_RPC_URL_DEV") if IS_DEV else os.getenv("BSC_RPC_URL")
 CHAIN_ID = 97 if IS_DEV else 56
 
+def explorer_base() -> str:
+    return "https://testnet.bscscan.com" if IS_DEV else "https://bscscan.com"
+
+def explorer_tx(tx_hash: str) -> str:
+    return f"{explorer_base()}/tx/{tx_hash}"
+
+def explorer_address(addr: str) -> str:
+    return f"{explorer_base()}/address/{addr}"
+
+def explorer_token(addr: str) -> str:
+    return f"{explorer_base()}/token/{addr}"
+
 # === Agentverse Config ===
 
 AGENTVERSE_API_KEY = os.getenv("AGENTVERSE_API_KEY")
