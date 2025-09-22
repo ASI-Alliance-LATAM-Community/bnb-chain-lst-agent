@@ -1,9 +1,9 @@
-from typing import Dict, Any, Tuple
+from typing import Dict, Any
 import json
 import requests
 from eth_utils import to_checksum_address
 
-from .config import GT_BASE, DEFAULT_HEADERS, WBNB_BSC
+from .config import GT_BASE, DEFAULT_HEADERS, WBNB_BSC, IS_DEV
 
 def fetch_pool_stats_bsc(token_addr: str) -> Dict[str, Any]:
     """
@@ -59,6 +59,9 @@ def auto_slippage_bps(token_addr: str) -> tuple[int, str]:
       - widen to 1.5–2.0% if pool is shallow or 24h move is large
       - tighten to 0.5% on deep + calm pools
     """
+    if IS_DEV:
+        return 100, "dev environment → using default 1.0%"
+    
     DEEP_USD = 2_000_000  # ≥ $2M considered deep
     SHALLOW_USD = 200_000  # < $200k considered shallow
     VERY_SHALLOW_USD = 50_000  # < $50k very shallow

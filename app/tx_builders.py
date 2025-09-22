@@ -1,6 +1,5 @@
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 from datetime import datetime, timezone
-import base64
 from eth_abi import encode
 from eth_utils import to_checksum_address
 

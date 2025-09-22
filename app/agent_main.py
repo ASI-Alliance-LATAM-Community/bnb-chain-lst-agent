@@ -1,5 +1,4 @@
 import json
-import base64
 import requests
 from uuid import uuid4
 from datetime import datetime, timezone
@@ -10,16 +9,12 @@ from uagents_core.contrib.protocols.chat import (
     ChatAcknowledgement,
     TextContent,
     StartSessionContent,
-    ResourceContent,
-    Resource,
 )
 from uagents import Agent, Context, Protocol
-from uagents_core.storage import ExternalStorage
-from .config import ASI1_BASE_URL, ASI1_HEADERS
+from .config import ASI1_BASE_URL, ASI1_HEADERS, IS_DEV, CHAIN_ID, BSC_RPC_URL
 from .registry import LST_REGISTRY_BSC
 from .tools import tools_schema, dispatch_tool
 from .settlement import settlement_tick
-
 
 def _text_msg(text: str) -> ChatMessage:
     return ChatMessage(
@@ -28,23 +23,6 @@ def _text_msg(text: str) -> ChatMessage:
         content=[TextContent(type="text", text=text)],
     )
 
-
-def _resource_msg(asset_id: str, uri: str, mime: str) -> ChatMessage:
-    return ChatMessage(
-        timestamp=datetime.now(timezone.utc),
-        msg_id=uuid4(),
-        content=[
-            ResourceContent(
-                type="resource",
-                resource_id=asset_id,
-                resource=Resource(
-                    uri=uri, metadata={"mime_type": mime, "role": "qr-code"}
-                ),
-            )
-        ],
-    )
-
-
 async def process_query(query: str, ctx: Context):
     try:
         user_message = {"role": "user", "content": query}
@@ -52,14 +30,15 @@ async def process_query(query: str, ctx: Context):
             "role": "system",
             "content": (
                 "You are an AI assistant called BNB-chain-LST-Agent. "
+                f"Network mode: {'DEV (BSC Testnet)' if IS_DEV else 'PROD (BSC Mainnet)'}; chainId={CHAIN_ID}. "
                 "You are a BNB-chain liquid staking expert. "
                 "You generate EIP-681 pay URIs (no QR images) that open a 'Send BNB' screen in wallets. "
                 "Tool usage:\n"
                 "• When the user asks for LST list or prices, call the function list_lst_tokens.\n"
                 "• When the user asks for BNB price or BNB info, call the function get_bnb_info.\n"
-                "• When the user wants to buy an LST (or asks for a pay link that lets them send BNB), call the function create_managed_buy.\n"
+                "• When the user wants to buy an LST (or asks for a pay link that lets them send BNB), call the function create_managed_buy with symbol_or_address and recipient_address (optional slippage_bps).\n"
                 "Behavior:\n"
-                "• After creating a managed QR, instruct the user to send any BNB amount (including gas) to the provided order address; explain the agent will swap BNB→LST on PancakeSwap v2 and deliver tokens to the recipient on BNB Chain (chainId 56).\n"
+                "• After creating a managed pay link, instruct the user to send any BNB amount (including gas) to the provided order address; explain the agent will swap BNB→LST on PancakeSwap v2 and deliver tokens to the recipient.\n"
                 "• If the recipient address is missing, ask for it. If the token symbol is unknown, show the supported list.\n"
                 "• Do not call tools that are not present in tools_schema.\n"
                 "Here is the list of known LST tokens on BNB chain:\n"
@@ -124,8 +103,8 @@ async def process_query(query: str, ctx: Context):
                     f"**Send BNB to:** `{recv}`\n"
                     f"**How much?** Any amount (includes gas)\n"
                     f"**Slippage:** { (sbps or 0) / 100:.2f}% — _{reason}_\n"
-                    f"**URI (EIP-681):** `{uri}`\n\n"
-                    f"Send tokens straight to your address."
+                    f"**Pay URI (EIP-681):** `{uri}`\n\n"
+                    f"Once your BNB arrives, I’ll swap BNB→{tok} on Pancake v2 and send the tokens to your address (chainId {CHAIN_ID})."
                 )
                 return text
 
@@ -156,6 +135,14 @@ agent = Agent(name="bnb-chain-lst-agent", port=8001, mailbox=True)
 chat_proto = Protocol(spec=chat_protocol_spec)
 
 
+@agent.on_event("startup")
+async def _startup(ctx: Context):
+    ctx.logger.info(
+        f"🚀 Starting in {'DEV (testnet)' if IS_DEV else 'PROD (mainnet)'} mode | chainId={CHAIN_ID}"
+    )
+    ctx.logger.info(f"RPC: {BSC_RPC_URL}")
+
+
 @agent.on_interval(period=6.0)
 async def _settle(ctx: Context):
     await settlement_tick(ctx)
@@ -177,7 +164,6 @@ async def handle_chat_message(ctx: Context, sender: str, msg: ChatMessage):
                 ctx.logger.info(f"Got a message from {sender}: {item.text}")
                 result = await process_query(item.text, ctx)
 
-                # result is now always text (str) or a JSON stringifiable object
                 response_text = (
                     result if isinstance(result, str) else json.dumps(result)
                 )

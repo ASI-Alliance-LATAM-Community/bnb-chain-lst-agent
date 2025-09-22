@@ -1,17 +1,48 @@
 from typing import Dict, Any
 from datetime import datetime, timezone
 from decimal import Decimal, ROUND_DOWN
-
 from eth_utils import keccak
 
+from .config import CHAIN_ID, IS_DEV
 from .registry import LST_REGISTRY_BSC
+
+try:
+    from .registry_dev import LST_REGISTRY_BSC_DEV
+except Exception:
+    LST_REGISTRY_BSC_DEV = []
+
+
+def _active_registry():
+    return LST_REGISTRY_BSC_DEV if IS_DEV and LST_REGISTRY_BSC_DEV else LST_REGISTRY_BSC
+
+
+def find_token(symbol_or_address: str) -> Dict[str, Any]:
+    s = symbol_or_address.strip().lower()
+    reg = _active_registry()
+
+    for t in reg:
+        if t["address"].lower() == s:
+            return t
+
+    for t in reg:
+        if t["symbol"].lower() == s:
+            return t
+
+    for t in reg:
+        for a in t.get("aliases") or []:
+            if str(a).lower() == s:
+                return t
+
+    allowed = [t["symbol"] for t in reg]
+    raise ValueError(
+        f"Unsupported token '{symbol_or_address}'. Allowed on this network: {allowed}"
+    )
 
 
 def wei_from_bnb(amount_str: str) -> int:
     amt = Decimal(str(amount_str))
     if amt <= 0:
         raise ValueError("amount_bnb must be > 0")
-
     wei = (amt * (Decimal(10) ** 18)).to_integral_value(rounding=ROUND_DOWN)
     return int(wei)
 
@@ -30,26 +61,8 @@ def eip681_from_tx(
         base += f"&gasPrice={gas_price}"
     return base
 
-def find_token(symbol_or_address: str) -> Dict[str, Any]:
-    s = symbol_or_address.strip().lower()
-    for t in LST_REGISTRY_BSC:
-        if t["address"].lower() == s:
-            return t
-    for t in LST_REGISTRY_BSC:
-        if t["symbol"].lower() == s:
-            return t
-    raise ValueError(
-        f"Unsupported token '{symbol_or_address}'. Allowed: {[t['symbol'] for t in LST_REGISTRY_BSC]}"
-    )
-
 
 def parse_approve_amount(amount: str | None) -> int:
-    """
-    Parse 'amount' for approve():
-      - None / 'max' / 'unlimited' -> uint256 max
-      - '0x...' -> hex
-      - decimal string -> raw uint256 (token base units). No decimals scaling here.
-    """
     if amount is None:
         return (1 << 256) - 1
     a = str(amount).strip().lower()

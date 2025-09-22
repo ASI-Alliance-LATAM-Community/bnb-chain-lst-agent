@@ -2,9 +2,8 @@ from typing import Dict, Any, List
 from datetime import datetime, timezone
 import requests
 
-from .config import CG_BASE, GT_BASE, PANCAKE_INFO_BASE, DEFAULT_HEADERS, WBNB_BSC
+from .config import CG_BASE, GT_BASE, PANCAKE_INFO_BASE, DEFAULT_HEADERS, WBNB_BSC, IS_DEV
 from .registry import LST_REGISTRY_BSC
-
 
 def fetch_bnb_price() -> Dict[str, Any]:
     """
@@ -58,6 +57,18 @@ def get_bnb_info() -> Dict[str, Any]:
     Returns current BNB price/info with fallbacks.
     Fields: symbol, name, coingecko_id, price_usd, change_24h_pct, last_updated, source, sources(list)
     """
+    if IS_DEV:
+        return {
+            "symbol": "BNB",
+            "name": "BNB (testnet reference)",
+            "coingecko_id": None,
+            "price_usd": None,
+            "change_24h_pct": None,
+            "last_updated": datetime.now(timezone.utc).isoformat(),
+            "source": "dev",
+            "sources": [],
+        }
+        
     now_ts = int(datetime.now(tz=timezone.utc).timestamp())
     now_iso = datetime.fromtimestamp(now_ts, tz=timezone.utc).isoformat()
 
@@ -263,6 +274,26 @@ def fetch_lst_prices_bsc(
 
 
 def list_lst_tokens() -> List[Dict[str, Any]]:
+    if IS_DEV:
+        enriched = []
+        now_iso = datetime.now(timezone.utc).isoformat()
+        for t in LST_REGISTRY_BSC:
+            enriched.append(
+                {
+                    "symbol": t["symbol"],
+                    "name": t["name"],
+                    "address": t["address"],
+                    "project": t["project"],
+                    "price_usd": None,
+                    "price_bnb": None,
+                    "peg_ratio": None,
+                    "change_24h_pct": None,
+                    "sources": t.get("sources", []),
+                    "last_updated": now_iso,
+                }
+            )
+        return enriched
+    
     addrs = [t["address"] for t in LST_REGISTRY_BSC]
     id_map = {t["address"].lower(): t.get("coingecko_id") for t in LST_REGISTRY_BSC}
     prices = fetch_lst_prices_bsc(addrs, id_map)
