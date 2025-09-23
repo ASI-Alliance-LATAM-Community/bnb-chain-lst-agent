@@ -180,19 +180,19 @@ Create `.env` in the project root:
 ASI1_API_KEY=
 
 # Agent’s internal key (never reuse for real funds)
-AGENT_PRIV=0xYOUR_TEST_PRIVATE_KEY
+AGENT_PRIV=
 
 # BNB Chain wallet private key for the agent
 AGENT_PRIV=
 
 # DEV uses BSC Testnet; otherwise PROD uses mainnet
-ENVIROMENT=DEV
+ENVIROMENT=
 
 # Mainnet RPC
-BSC_RPC_URL=https://bsc-dataseed.binance.org
+BSC_RPC_URL=
 
 # Testnet RPC
-BSC_RPC_URL_DEV=https://data-seed-prebsc-1-s1.binance.org:8545
+BSC_RPC_URL_DEV=
 ```
 
 

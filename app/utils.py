@@ -4,13 +4,7 @@ from decimal import Decimal, ROUND_DOWN
 from eth_utils import keccak
 
 from .config import CHAIN_ID, IS_DEV
-from .registry import LST_REGISTRY_BSC
-
-try:
-    from .registry_dev import LST_REGISTRY_BSC_DEV
-except Exception:
-    LST_REGISTRY_BSC_DEV = []
-
+from .registry import LST_REGISTRY_BSC, LST_REGISTRY_BSC_DEV
 
 def _active_registry():
     return LST_REGISTRY_BSC_DEV if IS_DEV and LST_REGISTRY_BSC_DEV else LST_REGISTRY_BSC

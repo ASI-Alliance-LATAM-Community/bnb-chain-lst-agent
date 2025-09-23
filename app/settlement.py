@@ -1,9 +1,6 @@
-# app/settlement.py
-
 from decimal import Decimal
 from typing import Optional
 from uagents import Context
-from uagents_core.contrib.protocols.chat import ChatMessage, TextContent
 from eth_account import Account
 from hexbytes import HexBytes
 from eth_utils import to_checksum_address
@@ -18,7 +15,7 @@ from .orders_kv import (
 )
 from .rpc import get_amount_out_min, simulate_swap, rpc
 from .tx_builders import build_swap_exact_eth_tx, estimate_gas_and_price
-from .agent_wallet import get_nonce, get_balance_wei
+from .agent_wallet import get_nonce, get_balance_wei, send_raw_tx
 from .config import (
     CHAIN_ID,
     GAS_BUDGET_MULTIPLIER,
@@ -30,7 +27,10 @@ from .config import (
 def _budget(gas_limit: int, gas_price: int) -> int:
     return int(Decimal(gas_limit * gas_price) * Decimal(str(GAS_BUDGET_MULTIPLIER)))
 
-def _broadcast_legacy(final_tx: dict, gas_limit: int, gas_price: int, nonce: int, priv: str) -> str:
+
+def _broadcast_legacy(
+    final_tx: dict, gas_limit: int, gas_price: int, nonce: int, priv: str, ctx: Context
+) -> str:
     acct = Account.from_key(priv)
     norm = {
         "chainId": int(CHAIN_ID),
@@ -50,8 +50,9 @@ def _broadcast_legacy(final_tx: dict, gas_limit: int, gas_price: int, nonce: int
         raw_bytes = bytes(HexBytes(getattr(signed, "raw_transaction")))
     else:
         raise TypeError(f"Unsupported signed tx type: {type(signed)}")
-    from .agent_wallet import send_raw_tx
+    ctx.logger.info(f"\n  signed raw tx: 0x{HexBytes(raw_bytes).hex()}\n")
     return send_raw_tx("0x" + HexBytes(raw_bytes).hex())
+
 
 def _gas_price_safe() -> int:
     try:
@@ -60,9 +61,8 @@ def _gas_price_safe() -> int:
             raise RuntimeError(gp["error"].get("message", "gasPrice error"))
         return int(gp["result"], 16)
     except Exception:
-        return 1_000_000_000 
+        return 1_000_000_000
 
-# ---------- refund path ----------
 
 def _build_refund_tx(to_addr: str, value_wei: int) -> dict:
     return {
@@ -70,6 +70,7 @@ def _build_refund_tx(to_addr: str, value_wei: int) -> dict:
         "value": int(value_wei),
         "data": "0x",
     }
+
 
 def _estimate_refund_cost(from_addr: str) -> tuple[int, int, int]:
     """
@@ -79,6 +80,7 @@ def _estimate_refund_cost(from_addr: str) -> tuple[int, int, int]:
     gas_limit = 30_000
     budget = _budget(gas_limit, gas_price)
     return gas_limit, gas_price, budget
+
 
 def _try_refund(ctx: Context, o: dict) -> Optional[str]:
     """
@@ -91,18 +93,18 @@ def _try_refund(ctx: Context, o: dict) -> Optional[str]:
     gas_limit, gas_price, budget = _estimate_refund_cost(o["recv_addr"])
     amount = bal - budget
     if amount <= 0:
-        return None 
+        return None
 
     tx = _build_refund_tx(o["recipient"], amount)
     nonce = get_nonce(o["recv_addr"])
-    txh = _broadcast_legacy(tx, gas_limit, gas_price, nonce, o["recv_priv"])
+    txh = _broadcast_legacy(tx, gas_limit, gas_price, nonce, o["recv_priv"], ctx)
     ctx.logger.info(f"Refund tx sent for order {o['id']} → {txh} (amount {amount} wei)")
     return txh
 
 
 async def try_settle_one(ctx: Context, o: dict) -> Optional[str]:
-    print(f"\n Checking order {o['id']}...")
-    print(f"\n  recv_addr: {o['recv_addr']}")
+    ctx.logger.info(f"\n Checking order {o['id']}...")
+    ctx.logger.info(f"\n  recv_addr: {o['recv_addr']}")
     bal = get_balance_wei(o["recv_addr"])
 
     if o.get("status") == "refund_pending":
@@ -114,18 +116,22 @@ async def try_settle_one(ctx: Context, o: dict) -> Optional[str]:
         return None
 
     if bal < MIN_SWAP_VALUE_WEI:
-        print(f"  balance {bal} wei < min {MIN_SWAP_VALUE_WEI} wei, skipping")
+        ctx.logger.info(f"  balance {bal} wei < min {MIN_SWAP_VALUE_WEI} wei, skipping")
         return None
 
-    print(f"\n Settling order {o['id']} with balance {bal} wei...")
+    ctx.logger.info(f"\n Settling order {o['id']} with balance {bal} wei...")
     path = [to_checksum_address(WBNB_BSC), to_checksum_address(o["token_address"])]
 
-    print("\n  estimating gas...")
+    ctx.logger.info("\n  estimating gas...")
     dummy_min = get_amount_out_min(bal, path, o["slippage_bps"])
-    dummy_tx  = build_swap_exact_eth_tx(bal, dummy_min, path, o["recipient"], deadline_unix=2**31-1)
+    dummy_tx = build_swap_exact_eth_tx(
+        bal, dummy_min, path, o["recipient"], deadline_unix=2**31 - 1
+    )
 
-    print("\n  simulating gas...")
-    gas_limit, gas_price, gas_err = estimate_gas_and_price(dummy_tx, from_address=o["recv_addr"])
+    ctx.logger.info("\n  simulating gas...")
+    gas_limit, gas_price, gas_err = estimate_gas_and_price(
+        dummy_tx, from_address=o["recv_addr"]
+    )
     if gas_limit is None or gas_price is None:
         err = f"gas estimation failed: {gas_err or 'unknown'}"
         mark_error(ctx, o["id"], err)
@@ -136,10 +142,10 @@ async def try_settle_one(ctx: Context, o: dict) -> Optional[str]:
             mark_refund_pending(ctx, o["id"], err)
         return None
 
-    print(f"\n  estimated gas limit: {gas_limit}, gas price: {gas_price} wei")
+    ctx.logger.info(f"\n  estimated gas limit: {gas_limit}, gas price: {gas_price} wei")
 
     gas_budget = _budget(gas_limit, gas_price)
-    amount_in  = bal - gas_budget
+    amount_in = bal - gas_budget
     if amount_in <= 0:
         txh = _try_refund(ctx, o)
         if txh:
@@ -148,11 +154,13 @@ async def try_settle_one(ctx: Context, o: dict) -> Optional[str]:
             mark_refund_pending(ctx, o["id"], "insufficient for swap; refund pending")
         return None
 
-    print(f"\n  gas budget: {gas_budget} wei, amount_in: {amount_in} wei")
+    ctx.logger.info(f"\n  gas budget: {gas_budget} wei, amount_in: {amount_in} wei")
     amount_out_min = get_amount_out_min(amount_in, path, o["slippage_bps"])
-    final_tx = build_swap_exact_eth_tx(amount_in, amount_out_min, path, o["recipient"], deadline_unix=2**31-1)
+    final_tx = build_swap_exact_eth_tx(
+        amount_in, amount_out_min, path, o["recipient"], deadline_unix=2**31 - 1
+    )
 
-    print(f"\n  final tx: {final_tx}")
+    ctx.logger.info(f"\n  final tx: {final_tx}")
 
     sim = simulate_swap(final_tx)
     if not sim.get("ok"):
@@ -165,23 +173,24 @@ async def try_settle_one(ctx: Context, o: dict) -> Optional[str]:
             mark_refund_pending(ctx, o["id"], err)
         return None
 
-    print(f"\n  simulation ok: {sim}")
+    ctx.logger.info(f"\n  simulation ok: {sim}")
 
     nonce = get_nonce(o["recv_addr"])
-    print(f"\n  using nonce: {nonce}")
+    ctx.logger.info(f"\n  using nonce: {nonce}")
 
-    txh = _broadcast_legacy(final_tx, gas_limit, gas_price, nonce, o["recv_priv"])
-    print(f"\n  sent tx: {txh} \n")
+    txh = _broadcast_legacy(final_tx, gas_limit, gas_price, nonce, o["recv_priv"], ctx)
+    ctx.logger.info(f"\n  sent tx: {txh} \n")
     return txh
 
+
 async def settlement_tick(ctx: Context):
-    print("\n Settlement tick...")
+    ctx.logger.info("\n Settlement tick...")
     pending = list_active(ctx)
-    print("\n Pending orders:", pending)
+    ctx.logger.info(f"\n Pending orders: {pending}")
 
     for o in pending:
         try:
-            print(f"\n Trying to settle order {o['id']}...")
+            ctx.logger.info(f"\n Trying to settle order {o['id']}...")
             txh = await try_settle_one(ctx, o)
 
             if txh:
