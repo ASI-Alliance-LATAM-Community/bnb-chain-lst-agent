@@ -17,6 +17,14 @@
 > **Hackathon Track:** *Unlocking Agent Intelligence on BNB Chain*
 > **Goal:** Build an autonomous AI agent that performs on-chain actions using **Fetch.ai uAgents** + **ASI-1 Mini (Web3-native LLM)** on **BNB Chain**.
 
+--- 
+
+## 💧 What are LST Tokens
+
+Liquid Staking Tokens (LSTs) represent staked BNB plus accrued staking rewards, wrapped into a transferable ERC-20 on BNB Chain. Instead of locking BNB and losing liquidity, users mint LSTs (e.g., BNBx, ANKRBNB, STKBNB) that are typically designed to track BNB value while gradually appreciating as rewards accumulate. 
+
+LSTs remain composable across DeFi—tradable on DEXs like PancakeSwap, usable as collateral, or routed through yield strategies—while the underlying validators keep earning. Risks include price deviations from BNB (liquidity/peg risk), validator/slashing exposure, smart-contract risk, and market liquidity constraints.
+
 ---
 
 ## ✨ What this agent does
